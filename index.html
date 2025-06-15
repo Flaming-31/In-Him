@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Scripture Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Soft Gold -->
+    <!-- Application Structure Plan: The application uses a hub-and-spoke design. The main view is a "hub" of clickable category cards for high-level thematic Browse (e.g., "In Christ," "By His Blood"). Clicking a card smoothly scrolls the user to a dedicated "spoke" or section on the same page. Within each section, scriptures are presented in a collapsible accordion format, encouraging focused reading by hiding details until requested. This layered approach prevents overwhelming the user and promotes exploration. A key feature is a dynamic search bar that filters all scriptures across all categories in real-time, allowing for powerful thematic discovery beyond the predefined categories. This structure was chosen over a simple list to transform passive reading into an active, user-driven exploration of the content. -->
+    <!-- Visualization & Content Choices: The source report consists entirely of hierarchical text (Categories -> Scriptures -> Translations/Explanations). The goal is to organize this text and make it explorable. The chosen presentation method is a system of interactive cards and accordions built with HTML/CSS/Tailwind and powered by Vanilla JS. Goal: Organize -> Method: Thematic sections with accordion lists. Interaction: Click to expand/collapse scripture details. This keeps the UI clean and focused. Goal: Explore/Find -> Method: A dynamic search input field. Interaction: Typing filters and highlights relevant scriptures across all sections. This allows users to discover connections and themes not immediately apparent in the original structure. No charts are needed as there is no quantitative data. The emojis from the source (✅, 💖, 📝) are retained to preserve the tone. CONFIRMING NO SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .smooth-scroll { scroll-behavior: smooth; }
+        .active-nav {
+            color: #D97706; /* amber-600 */
+            border-bottom-color: #D97706; /* amber-600 */
+        }
+        .highlight {
+            background-color: #FEF3C7; /* amber-100 */
+            border-color: #FBBF24; /* amber-400 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transform: scale(1.02);
+        }
+        .dimmed {
+            opacity: 0.4;
+            filter: grayscale(80%);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s ease;
+            padding: 0 1.5rem;
+        }
+        .accordion-content.open {
+            max-height: 1000px; /* Large enough for content */
+            padding: 1rem 1.5rem 1.5rem;
+        }
+        #top-nav {
+            transition: top 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800 smooth-scroll">
+
+    <div id="app" class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-amber-700 mb-2">Your Identity In Christ</h1>
+            <p class="text-lg text-stone-600 max-w-3xl mx-auto">An interactive explorer of the foundational truths of who you are in Him. Click a theme to begin, or use the search to find specific truths.</p>
+        </header>
+        
+        <div class="sticky top-0 bg-stone-100/80 backdrop-blur-lg z-10 py-4 mb-8 border-b border-stone-200 -mx-4 px-4" id="top-nav-container">
+            <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between">
+                 <input type="search" id="search-box" placeholder="🔎 Search for words like 'love', 'power', 'free'..." class="w-full sm:w-1/3 mb-4 sm:mb-0 px-4 py-2 border border-stone-300 rounded-full focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition duration-300">
+                <nav id="main-nav" class="flex flex-wrap justify-center gap-x-4 gap-y-2">
+                </nav>
+            </div>
+        </div>
+
+        <main id="main-content">
+            <!-- Sections will be dynamically generated here -->
+        </main>
+        
+        <footer class="text-center mt-16 border-t border-stone-200 pt-8">
+            <p class="text-stone-500">Built to explore the scriptures from Kenneth E. Hagin's "In Him".</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const scriptureData = [
+            {
+                category: 'In Christ',
+                scriptures: [
+                    { ref: 'Romans 3:24', erv: 'All of us have sinned and would be lost forever, but God treats us much better than we deserve. And because of Christ Jesus, he freely accepts us and sets us free from our sins.', tpt: 'Yet through his powerful declaration of acquittal, God freely gives away his righteousness—a gift from his lavish grace. He declares us perfect in his eyes and frees us from the penalty of sin through Jesus Christ.', exp: 'Even when you mess up, Jesus made a way for you to be totally forgiven. You’re accepted, loved, and free—not because you earned it, but because He gave it!' },
+                    { ref: 'Romans 8:1-2', erv: 'So now, if you are in Christ Jesus, you will not be punished. The law of the Spirit gives us life in Christ Jesus and has set us free from the law of sin and death.', tpt: 'So now the case is closed. There remains no accusation or condemnation for those who are in living union with King Jesus. For the law of the Spirit of life flowing through the anointing of Jesus has liberated us from the law of sin and death.', exp: 'No more feeling guilty or like you\'re not good enough if you follow Jesus! His power sets you free from the bad stuff that tries to control you, so you can truly live.' },
+                    { ref: 'Romans 12:5', erv: 'In the same way, we are many people, but in Christ we are one body. And each part of the body belongs to all the other parts.', tpt: 'We are like the many parts of a human body; so too we are many members, yet we’re all joined to one another in this one body of the Anointed One.', exp: 'We\'re all different, but when you\'re with Jesus, we\'re all connected like a team! Everyone has a role to play and we need each other.' },
+                    { ref: '1 Corinthians 1:2', erv: 'To the church of God in Corinth, to you who have been made holy in Christ Jesus, called to be his holy people, together with all people everywhere who pray to the name of our Lord Jesus Christ—their Lord and ours.', tpt: 'To the church of God in Corinth, you are the ones who are set apart for God in the Anointed One, Jesus, and you are called to be his holy people, along with all those everywhere who call upon the name of our Lord Jesus Christ, their Lord and ours.', exp: 'This message is for you! If you follow Jesus, you\'re special and set apart by God. You\'re part of a huge family with other believers all over the world.' },
+                    { ref: '1 Corinthians 1:30', erv: 'God has united you with Christ Jesus. Christ is now our wisdom from God. Christ made us right with God, and Christ made us holy. And he has set us free from sin.', tpt: 'God is the one who empowered you to be in union with the Anointed One, Jesus. Our union with him makes us to be as one with God, for he is our wisdom, our righteousness, our holiness, and our redemption.', exp: 'God brought you close to Jesus. Now, Jesus is like your superpower for everything – He gives you wisdom, makes you right with God, helps you live a good life, and sets you totally free!' },
+                    { ref: '1 Corinthians 15:22', erv: 'In the same way that everyone dies because of Adam, everyone who is in Christ will be made alive.', tpt: 'For just as all die in Adam, so also all who are in the Anointed One will be made alive.', exp: 'Just like everyone is affected by the first human\'s mistake, everyone who chooses Jesus gets new, eternal life! It\'s a fresh start.' },
+                    { ref: '2 Corinthians 1:21', erv: 'In Christ, God makes you and us strong. God made us his special people.', tpt: 'And God himself is the one who has anointed us, giving us a firm identity and a secure place in Christ.', exp: 'God makes you strong through Jesus. He chose you and gave you a solid, secure identity. You belong!' },
+                    { ref: '2 Corinthians 2:14', erv: 'But thanks be to God, who always leads us in victory through Christ. God uses us to spread his knowledge everywhere, like a sweet-smelling perfume.', tpt: 'Now thanks be to God who always leads us in triumph in Christ and through us diffuses the fragrance of His knowledge in every place.', exp: 'Even when things are tough, God always helps us win through Jesus! He uses us to share His goodness and show others how awesome He is, like a cool, sweet smell that everyone notices.' },
+                    { ref: '2 Corinthians 3:14', erv: 'But their minds were closed. And even today, when they read the Old Agreement, that same covering hides the meaning. It is not removed, because only in Christ can it be taken away.', tpt: 'Yet their minds were closed, and to this very day, the same veil remains over their hearts when they read the stories of the Old Covenant. For only in Christ can the veil be lifted.', exp: 'Some people just don\'t get God\'s plan because it\'s like a blindfold is over their eyes. But when you connect with Jesus, that blindfold comes off, and everything makes sense!' },
+                    { ref: '2 Corinthians 5:17', erv: 'So if anyone is in Christ, that person is a new creation. The old way of living has gone. A new way of living has come!', tpt: 'For anyone united with the Anointed One, he is a new creation! The old has passed away; behold, everything has become new!', exp: 'When you\'re with Jesus, it\'s like a total reset! The old you, with all the past mistakes, is gone. You\'re a brand-new person, ready for a fresh start!' },
+                    { ref: '2 Corinthians 5:19', erv: 'What I mean is that in Christ, God was bringing the world back to himself. He did not count people’s sins against them. And he gave us the work of telling everyone the Good News about how he makes them his friends.', tpt: 'It was God’s purpose to use the Anointed One to reconcile and restore the world to himself. He cancelled humanity’s record of sin and entrusted us with this ministry of reconciliation.', exp: 'God used Jesus to bring everyone back to Him. He basically hit the "delete" button on all our sins! Now, it\'s our job to tell others how they can become friends with God too.' },
+                    { ref: 'Galatians 2:4', erv: 'We brought these other believers with us because some false believers had secretly come into our group. They came in to spy on us and to find out about the freedom we have in Christ Jesus. They wanted to make us slaves.', tpt: 'And that is why we brought Titus with us, for the issue of freedom in Christ was at stake. We were forced to take a stand against the infiltration of imposter spies, who wormed their way into our fellowship to spy on our freedom in King Jesus. They wanted to force us into slavery under the law.', exp: 'We stood strong because some sneaky people tried to mess with our freedom in Jesus. They wanted to put rules on us that Jesus already freed us from! Stay firm in your freedom!' },
+                    { ref: 'Galatians 3:26', erv: 'You are all children of God through faith in Christ Jesus.', tpt: 'For now in God’s family you are all like adult sons and daughters, for you are all in union with the Anointed One, Jesus, because of your faith.', exp: 'If you trust in Jesus, you\'re officially a child of God. You\'re not just some random person; you\'re part of His family!' },
+                    { ref: 'Galatians 3:28', erv: 'In Christ there is no Jew or Greek, slave or free, male or female. You are all the same in Christ Jesus.', tpt: 'In Christ’s family there is no Jew or Gentile, male or female, servant or free, for you are all one in Jesus the Anointed One!', exp: 'In Jesus, everyone is equal! It doesn\'t matter your background, your gender, or your social status. We\'re all united and important to Him.' },
+                    { ref: 'Galatians 5:6', erv: 'If you are in Christ Jesus, it doesn’t matter if you are circumcised or not. What is important is faith—the kind of faith that works through love.', tpt: 'When you’re living in the Anointed One, Jesus, neither keeping the Jewish law nor not keeping it matters. All that matters is living by faith, expressed through love.', exp: 'What really counts when you follow Jesus isn\'t about rules or traditions. It\'s about having real faith that shows up in how much you love others.' },
+                    { ref: 'Galatians 6:15', erv: 'Being circumcised or not being circumcised means nothing. But what means something is being a new creation.', tpt: 'For the only thing that counts is being a new creation in Christ.', exp: 'Forget about outward stuff. What truly matters is that you\'re a new person on the inside because of Jesus!' },
+                    { ref: 'Ephesians 1:3', erv: 'Praise to God, the Father of our Lord Jesus Christ! In Christ, God has given us every spiritual blessing in the heavenly world.', tpt: 'Every spiritual blessing in the heavenly realm has already been lavished upon us as a love gift from our wonderful heavenly Father, the Father of our Lord Jesus Christ, who is intimately united with us.', exp: 'God is amazing! Through Jesus, He\'s already given us every good, spiritual gift we could ever need. It\'s like He\'s loaded us up with treasures!' },
+                    { ref: 'Ephesians 1:10', erv: 'His goal was to bring everything in heaven and on earth together under Christ as the head.', tpt: 'And now in the Anointed One, he has revealed his plan for the fullness of time—to bring all things in heaven and on earth into unity under the Messiah.', exp: 'God\'s big plan is to eventually bring *everything* together under Jesus\' leadership—like a master plan for the whole universe, with Him in charge!' },
+                    { ref: 'Ephesians 2:6', erv: 'And God raised us up with Christ and gave us a seat with him in the heavens. This is true because we are in Christ Jesus.', tpt: 'And God raised us up with him and enthroned us with him in the heavenly realms to demonstrate his superabundant grace to us, which is above and beyond imagination, in kindness toward us in Christ Jesus.', exp: 'When Jesus came alive, you did too, spiritually speaking! God sees you as sitting right next to Jesus in a place of honor. That’s how special you are to Him!' },
+                    { ref: 'Ephesians 2:10', erv: 'God made us what we are. In Christ Jesus, God made us new people so that we would do good works. God had already planned for us to do these good works.', tpt: 'For we are God’s masterpiece, created in Christ Jesus to do good works that God prepared long ago to be our way of life.', exp: 'You are God\'s one-of-a-kind masterpiece! He remade you through Jesus so you could do awesome, good things He planned for you a long time ago. You have a purpose!' },
+                    { ref: 'Ephesians 2:13', erv: 'In the past you were far away from God, but now in Christ Jesus, you have been brought near to God through the blood of Christ.', tpt: 'But now, because of Christ Jesus, you have been brought near to God. For at one time you were far away, but now by the blood of Christ, all of that has changed.', exp: 'You used to feel far from God, but because Jesus died for you, you\'re super close to Him now! His sacrifice made it happen.' },
+                    { ref: 'Ephesians 3:6', erv: 'The secret is that through the Good News, those who are not Jews will share with the Jews in the blessings God promised. They will be part of the same body, and they will share in the promise of Christ Jesus.', tpt: 'This mystery is the truth that the non-Jewish people are co-heirs with Jewish people, one body united in Christ, and they are now co-sharers of the promise of Jesus Christ through the good news!', exp: 'Here\'s the big secret: Everyone—no matter their background—gets to share in all of God\'s amazing promises through Jesus. We\'re all one big family with Him!' },
+                    { ref: 'Philippians 3:13-14', erv: 'Brothers and sisters, I don’t think that I have reached that goal yet. But I do one thing: I forget what is behind me and try to reach what is ahead. I push myself toward the goal to win the prize. God has called us to heaven because of Christ Jesus.', tpt: 'I don’t mean that I’ve already reached perfection. But I’ve got my eye on the goal, where God is beckoning us onward—to take hold of all that Christ Jesus has already taken hold of for me!', exp: 'Don\'t focus on past mistakes! Keep your eyes on the future, pushing towards the awesome life God has called you to live with Jesus. There\'s so much more ahead!' },
+                    { ref: 'Colossians 1:28', erv: 'We tell people about Christ. We use all the wisdom we have to warn and to teach everyone so that all people will be spiritually mature in Christ.', tpt: 'We continue to preach Christ to all people, using every revelation of truth, and we instruct everyone in the perfection of wisdom, so that we may present a mature man or woman of God in Christ Jesus.', exp: 'We teach everyone about Jesus and all His wisdom so that you can grow up spiritually strong and complete in Him. You\'re meant to be awesome!' },
+                    { ref: '1 Thessalonians 4:16', erv: 'The Lord himself will come down from heaven with a loud command, with the voice of the archangel, and with the trumpet call of God. And those who died in Christ will rise first.', tpt: 'For the Lord himself will descend from heaven with a mighty roar, with the commanding call of the archangel, and with the blast of God’s trumpet. Those who have died in Christ will be the first ones to rise from their graves.', exp: 'When Jesus comes back, it\'s going to be epic! Everyone who trusted Him and passed away will be the first to rise from the dead. It\'s a huge promise!' },
+                    { ref: '1 Thessalonians 5:18', erv: 'In everything give thanks, because this is what God wants you to do in Christ Jesus.', tpt: 'Let gratitude saturate every circumstance and season of your lives, for this is God’s perfect will for those who live in union with Christ Jesus.', exp: 'Be thankful in every situation, good or bad. It’s what God wants you to do, and it shows you\'re truly connected to Jesus. A thankful heart makes a huge difference!' },
+                    { ref: '1 Timothy 1:14', erv: 'Our Lord’s grace was truly great, and with his grace came the faith and love that are in Christ Jesus.', tpt: 'And the grace of our Lord superabounded for me, along with the faith and love that are found in Christ Jesus.', exp: 'God\'s grace (His amazing kindness and favor) poured out on me, and with it came faith and love that you find when you\'re with Jesus. It\'s an overflowing gift!' },
+                    { ref: '2 Timothy 1:9', erv: 'God saved us and chose us to be his holy people. This was not because of anything we did, but because of his own purpose and grace. That grace was given to us through Christ Jesus before time began.', tpt: 'For God saved us and called us to a holy life, not because of anything we have done, but because of his own purpose and grace. This grace was given to us in Christ Jesus before the world began.', exp: 'God didn\'t save you because you were good enough; He saved you because of His awesome plan and kindness. He chose you in Jesus way before you were even born!' },
+                    { ref: '2 Timothy 1:13', erv: 'Hold on to the true teaching that you heard from me. That teaching is an example of faith and love that are in Christ Jesus.', tpt: 'Hold on to the pattern of sound teaching that you’ve heard from me, with faith and love as the example you follow—faith and love that are found in Christ Jesus.', exp: 'Stick to the good lessons you\'ve learned. Let faith and love in Jesus be your guide and example for everything you do.' },
+                    { ref: '2 Timothy 2:1', erv: 'Timothy, you are like a son to me. Be strong in the grace that we have in Christ Jesus.', tpt: 'My beloved son, draw your strength from the grace of God that is in Christ Jesus.', exp: 'My friend, get your power and strength from the amazing kindness of God that comes through Jesus. He\'s got your back!' },
+                    { ref: '2 Timothy 2:10', erv: 'So I patiently suffer through all these things for the sake of God’s chosen people. I do this so that they can have the salvation that is in Christ Jesus with eternal glory.', tpt: 'I endure all this for the sake of the chosen ones, so that they too may experience the fullness of salvation found in Christ Jesus, along with eternal glory!', exp: 'I go through tough times for those God chose, so they can experience the amazing salvation and eternal glory that comes from being with Jesus. It\'s worth it!' },
+                    { ref: '2 Timothy 3:15', erv: 'You have known the Holy Writings since you were a child. These Writings can give you the wisdom to lead you to salvation through faith in Christ Jesus.', tpt: 'And that the holy writings, which you have known since childhood, are able to teach you the wisdom that leads to salvation through faith in Christ Jesus.', exp: 'You\'ve known the Bible since you were little, and it has the wisdom to guide you to salvation—it’s all about trusting in Jesus!' },
+                    { ref: 'Philemon 1:6', erv: 'I pray that the faith you share will make you understand every blessing that we have in Christ.', tpt: 'I pray that the faith we share will become even more effective as you fully realize and understand every spiritual good that we have in Christ.', exp: 'I\'m praying that as we share our faith, you\'ll totally grasp all the incredible good things God has given us through Jesus!' },
+                    { ref: '2 Peter 1:8', erv: 'If you have these things and make them grow, you will be useful and productive in your knowledge of our Lord Jesus Christ.', tpt: 'For if these qualities are continually expanding within you, they will make you a productive and effective student of our Lord Jesus Christ.', exp: 'If you keep growing in these good qualities (like faith, goodness, knowledge), you\'ll become super useful and effective as you learn more about Jesus!' },
+                    { ref: '2 John 1:9', erv: 'Anyone who goes beyond the true teaching of Christ and does not live by it does not have God. But the one who lives by the true teaching of Christ has both the Father and the Son.', tpt: 'Everyone who goes beyond the teaching of Christ, and does not remain in it, does not have God. But the one who remains in the teaching has both the Father and the Son.', exp: 'If you wander away from what Jesus taught, you\'re missing out on God. But if you stick with His teachings, you get to have both God the Father and Jesus close to you!' },
+                ]
+            },
+            {
+                category: 'In Him',
+                scriptures: [
+                    { ref: 'Acts 17:28', erv: '‘By his power we live and move and exist.’ Some of your own poets have said: ‘For we are his children.’', tpt: 'It is through him that we live and function and have our identity; just as your own poets have said, ‘Our lineage comes from him.’', exp: 'God isn’t far away—He’s the reason we’re alive! He gives you purpose, strength, and a true identity. You’re not random—you’re God’s own child.' },
+                    { ref: 'John 1:4', erv: 'Life was in him, and that life was the light for all people.', tpt: 'For in him was found the living fullness of life, and the life-light within him became the light of all mankind.', exp: 'Jesus is full of life, and that life lights up the whole world. He brings light to your darkest moments!' },
+                    { ref: 'John 3:15-16', erv: 'I did this so that everyone who believes in him can have eternal life. Yes, God loved the world so much that he gave his only Son, so that everyone who believes in him would not be lost but have eternal life.', tpt: 'So that everyone who believes in him will not perish but have eternal life. For this is how much God loved the world—he gave his one and only, unique Son as a gift. So now everyone who believes in him will never perish but experience everlasting life!', exp: 'God loves you so much that He sent Jesus so that if you believe in Him, you\'ll never be lost and get to live forever with Him! It\'s the ultimate gift.' },
+                    { ref: '2 Corinthians 1:20', erv: 'For all of God’s promises have their “Yes” in Christ. So through Christ we say “Amen” to the glory of God.', tpt: 'For all of God’s promises find their “yes” of fulfillment in him. And as his “Amen” is spoken through us, blessing God for his glory.', exp: 'Every promise God has made is a definite "YES!" because of Jesus. When we say "Amen" to that, we\'re giving God all the glory!' },
+                    { ref: '2 Corinthians 5:21', erv: 'Christ had no sin, but God made him become sin for us. So in Christ we could become right with God.', tpt: 'For God made the only one who knew no sin to become sin for us, so that we would become the righteousness of God in him.', exp: 'Jesus never did anything wrong, but God made Him take all our wrong stuff on Himself. Why? So that in Jesus, we could be totally right with God!' },
+                    { ref: 'Ephesians 1:4', erv: 'In Christ, God chose us before the world was made. He chose us to be holy and without blame in his eyes. He chose us because of his love.', tpt: 'Just as he chose us to be reunited with himself through the Anointed One before the foundation of the world, so that we would be holy and without fault before him, lavished in his love.', exp: 'God picked *you* to be His, even before He created the world! He wanted you to be pure and perfect in His eyes, all because of His crazy love for you.' },
+                    { ref: 'Philippians 3:9', erv: 'I no longer try to be made right with God by following the law. I am made right with God through faith in Christ. God’s way of making people right with him is to make them believe in Christ.', tpt: 'I no longer live with the law as the source of my righteousness, but with the righteousness that is given through the faith of the Anointed One, which comes from God and is based on faith.', exp: 'I stopped trying to be good enough by following rules. Now, I\'m right with God just by believing in Jesus. It\'s His gift to me!' },
+                    { ref: 'Colossians 2:6-7', erv: 'You accepted Christ Jesus as your Lord. So continue to live in him. Keep your roots deep in him and build your life on him. Be strong in the faith, just as you were taught. And be filled with thanks.', tpt: 'In the same way you have welcomed our Lord Jesus Christ as your Lord, now continue to live your lives empowered by him. Strike your roots downward into him and continue to grow upward into him, being built up in your faith, and overflow with thanksgiving for all he has done!', exp: 'You said "yes" to Jesus, so keep on living with Him as your focus! Go deep with Him, build your life on His truth, and let your faith grow super strong. Always be thankful!' },
+                    { ref: 'Colossians 2:10', erv: 'And in him you have been made complete. He is the head over every ruler and authority.', tpt: 'For in him dwells all the fullness of God in a human body; and you have been made complete in him, who is the Head over every ruler and authority.', exp: 'In Jesus, you\'re totally complete and whole. You don\'t need anything else! He\'s in charge of everything, so you\'re covered.' },
+                ]
+            },
+             {
+                category: 'In Whom',
+                scriptures: [
+                    { ref: 'Ephesians 1:7', erv: 'In Christ we are set free by the blood of his death. And in him we have forgiveness of sins, made possible by God’s rich grace.', tpt: 'In him, we have redemption through his blood, the forgiveness of our failures, according to the riches of his grace.', exp: 'In Jesus, because He died for us, we are totally free and all our mistakes are forgiven. It\'s all thanks to God\'s incredibly rich kindness!' },
+                    { ref: 'Ephesians 1:11', erv: 'In Christ we were chosen to be God’s people. God had already planned this because he is the one who makes everything happen just as he decides.', tpt: 'It is in him that we have been chosen, predestined by an unchangeable plan to fulfill his purposes, for he accomplishes all things according to the counsel and the decision of his will.', exp: 'God picked us to be His in Jesus! He had a master plan all along, and He makes everything happen exactly how He decided. You\'re part of His incredible purpose!' },
+                    { ref: 'Ephesians 1:13', erv: 'You also heard the message of truth, the Good News that saved you. And when you believed in Christ, he put his stamp on you—the Holy Spirit he had promised.', tpt: 'And because of him, when you heard the revealing truth of the gospel of your salvation, and you were brought into union with him and believed in him, you too were branded with the Holy Spirit of promise.', exp: 'When you heard the good news about Jesus and believed, He put His special mark on you—the promised Holy Spirit! It\'s like God stamped you as His own.' },
+                    { ref: 'Ephesians 2:21-22', erv: 'He makes the whole building fit together perfectly. And as it grows, it becomes a holy temple in the Lord. And in him you too are being built into a place where God lives through the Spirit.', tpt: 'In him, the whole building is being joined together and is rising into a holy temple in the Lord. And in him, you are being built together into a dwelling place of God in the Spirit.', exp: 'Jesus is like the master builder, making everything fit together perfectly. You\'re part of God\'s special place, being built up by His Spirit so God can live right there with you!' },
+                    { ref: 'Ephesians 3:12', erv: 'In Christ we can come to God with freedom and without fear. We can do this through faith in Christ.', tpt: 'And in him, we have bold and confident access to God through faith’s assurance.', exp: 'Through Jesus, you can go right up to God without being scared or worried. Just trust Him, and you\'re good to go!' },
+                    { ref: 'Colossians 1:14', erv: 'The Son paid the price to make us free, and in him we have forgiveness of sins.', tpt: 'For in him we have our freedom, and the forgiveness of our sins has been purchased through his blood.', exp: 'Jesus paid the ultimate price to set you free, and through Him, all your sins are totally forgiven. It\'s a huge deal!' },
+                    { ref: 'Colossians 2:3', erv: 'In him are hidden all the treasures of wisdom and knowledge.', tpt: 'And in him are all the treasures of wisdom and knowledge hidden away.', exp: 'All the amazing wisdom and knowledge in the universe? It\'s all tucked away in Jesus! He\'s the ultimate source of all truth.' },
+                ]
+            },
+            {
+                category: 'By His Blood',
+                scriptures: [
+                    { ref: 'Hebrews 9:11-12', erv: 'But Christ came as the high priest of the good things we now have. He entered the greater and more perfect tent that is not made by human hands and is not a part of this created world. Christ entered the Most Holy Place only one time. He did not take the blood of goats and calves to offer as a sacrifice. He used his own blood to set us free from sin forever.', tpt: 'But now Christ has appeared as the high priest of the superior realities to come. He has gone through the greater and more perfect tabernacle that is not made with human hands, nor is a part of this creation. He entered once and for all into the Holiest Sanctuary, not with the blood of goats or calves, but with his own precious blood, and has secured our eternal redemption!', exp: 'Jesus is like the ultimate priest! He went into the most holy place in heaven, not with animal blood, but with His *own* blood, and set us free from sin *forever*!' },
+                    { ref: 'Hebrews 9:14-15', erv: 'The blood of Christ is much better. Christ offered himself through the eternal Spirit as a perfect sacrifice to God. His blood will make our consciences clean from useless acts so that we can serve the living God. Christ did this so that those who are called can receive the blessings that God has promised. These are the blessings that last forever. They can have these blessings because Christ died to set them free from sins committed under the first agreement.', tpt: 'How much more will the blood of the Messiah, who by the eternal Spirit offered himself without blemish to God, purify our consciences from dead works to serve the living God? And for this reason he is the mediator of a new covenant, so that those who are called may receive the promised eternal inheritance, for he died as a ransom to set them free from the transgressions committed under the first covenant.', exp: 'Jesus\' blood is way more powerful. He offered Himself perfectly to God. His blood cleanses our consciences from all the pointless things we do, so we can serve the living God! He died so those God chose could get eternal blessings, freeing them from old sins.' },
+                    { ref: 'Hebrews 10:19-20', erv: 'So, brothers and sisters, we are free to enter the Most Holy Place with boldness because of the blood of Jesus. We can enter through the new and living way that he opened for us through the curtain—his body.', tpt: 'So now we have boldness, brothers and sisters, to enter into the Holiest Sanctuary by the blood of Jesus, by a new and living way which he inaugurated for us through the veil, that is, his flesh.', exp: 'Hey everyone, we can confidently go right into God\'s presence because of Jesus\' blood! He made a brand-new, living way for us to enter, by giving up His own body.' },
+                    { ref: '1 John 1:7', erv: 'But if we live in the light, as God is in the light, then we have fellowship with each other, and the blood of Jesus, his Son, makes us clean from all sin.', tpt: 'But if we walk in the light, as he is in the light, we have fellowship with one another, and the blood of Jesus, his Son, cleanses us from all sin.', exp: 'If we live openly and honestly, like God does, then we get along with each other, and Jesus\' blood completely washes away all our sins!' },
+                ]
+            },
+            {
+                category: 'With Christ',
+                scriptures: [
+                    { ref: 'Romans 6:8', erv: 'If we died with Christ, we believe that we will also live with him.', tpt: 'For if we were co-crucified with the Anointed One, we know that we will also co-resurrect with him.', exp: 'If we died to our old ways with Jesus, then we totally believe we\'ll also live a new life with Him!' },
+                    { ref: 'Galatians 2:20', erv: 'I was crucified with Christ. So I no longer live, but Christ lives in me. And the life that I now live in this body, I live by faith in the Son of God, who loved me and gave himself for me.', tpt: 'My crucifixion with Christ has made me a co-crucified one with him, and I no longer live, for the Anointed One lives in me. The life you see me living now is not my own, but it is the Anointed One living his life through me—for by faith I am living a life that has been totally surrendered to the Son of God, who loved me and gave himself for me.', exp: 'I died with Jesus on the cross, so it\'s not really *me* living anymore, but Jesus living through me! The life I have now, I live by trusting the Son of God, who loved me so much He gave up everything for me.' },
+                    { ref: 'Ephesians 2:5', erv: 'We were spiritually dead because of our sins, but he gave us new life with Christ. You have been saved by God’s grace.', tpt: 'Even when we were dead in our transgressions, he made us alive together with Christ—for by grace you have been saved!', exp: 'We were totally dead inside because of our mistakes, but God brought us back to life *with* Jesus! It\'s all because of God\'s amazing kindness.' },
+                    { ref: 'Colossians 3:1', erv: 'You were raised from death with Christ. So reach for the things that are in heaven, where Christ is sitting at the right side of God.', tpt: 'Since we have been raised to new life with Christ, we must continually and eagerly seek the things that are above, where Christ is seated at the right hand of God.', exp: 'You came alive with Jesus, so aim for the awesome things in heaven, where Jesus is with God. Don\'t focus on earthly stuff!' },
+                    { ref: 'Colossians 3:3', erv: 'Your old life has died, and your new life is hidden with Christ in God.', tpt: 'For you died to all that is not of God, and your new creation life is now deposited in Christ, and he is in God.', exp: 'Your old self is gone, and your new, real life is safe and hidden with Jesus, right there with God. It\'s totally secure!' },
+                ]
+            },
+            // Add other categories here...
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainContent = document.getElementById('main-content');
+            const mainNav = document.getElementById('main-nav');
+            
+            scriptureData.forEach(category => {
+                const categoryId = category.category.replace(/\s+/g, '-').toLowerCase();
+
+                const navLink = document.createElement('a');
+                navLink.href = `#${categoryId}`;
+                navLink.textContent = category.category;
+                navLink.className = 'nav-link px-3 py-1 text-stone-600 font-medium border-b-2 border-transparent hover:text-amber-600 hover:border-amber-600 transition duration-300';
+                navLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById(categoryId).scrollIntoView({ behavior: 'smooth' });
+                });
+                mainNav.appendChild(navLink);
+
+                const section = document.createElement('section');
+                section.id = categoryId;
+                section.className = 'pt-16 -mt-16'; 
+
+                let scriptureHtml = `<h2 class="text-3xl font-bold text-amber-700 mb-2">${category.category}</h2>
+                                     <p class="text-stone-600 mb-8">Exploring the promises and realities of being "${category.category}".</p>
+                                     <div class="space-y-4">`;
+
+                category.scriptures.forEach((s, index) => {
+                    const searchableText = `${s.ref} ${s.erv} ${s.tpt} ${s.exp}`.toLowerCase();
+                    scriptureHtml += `
+                        <div class="scripture-card bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden transition-all duration-300" data-searchable-text="${searchableText}">
+                            <div class="accordion-header cursor-pointer p-4 flex justify-between items-center hover:bg-stone-50">
+                                <h3 class="font-semibold text-lg text-stone-800">${s.ref}</h3>
+                                <span class="transform transition-transform duration-300">▼</span>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="space-y-4">
+                                    <p><strong class="text-green-600">✅ ERV:</strong> ${s.erv}</p>
+                                    <p><strong class="text-pink-600">💖 TPT:</strong> ${s.tpt}</p>
+                                    <p class="mt-2 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-md"><strong class="text-amber-800">📝 Note:</strong> ${s.exp}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                scriptureHtml += '</div>';
+                section.innerHTML = scriptureHtml;
+                mainContent.appendChild(section);
+            });
+            
+            mainContent.addEventListener('click', function(e) {
+                const header = e.target.closest('.accordion-header');
+                if (header) {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('span');
+                    
+                    document.querySelectorAll('.accordion-content.open').forEach(openContent => {
+                        if(openContent !== content) {
+                           openContent.classList.remove('open');
+                           openContent.previousElementSibling.querySelector('span').classList.remove('rotate-180');
+                        }
+                    });
+
+                    content.classList.toggle('open');
+                    icon.classList.toggle('rotate-180');
+                }
+            });
+
+            const searchBox = document.getElementById('search-box');
+            searchBox.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const scriptureCards = document.querySelectorAll('.scripture-card');
+                let hasResults = false;
+                
+                scriptureCards.forEach(card => {
+                    const text = card.dataset.searchableText;
+                    if (text.includes(searchTerm)) {
+                        card.classList.remove('dimmed');
+                        card.classList.add('highlight');
+                        hasResults = true;
+                    } else {
+                        card.classList.remove('highlight');
+                        card.classList.add('dimmed');
+                    }
+                });
+
+                if (searchTerm === '') {
+                    scriptureCards.forEach(card => {
+                        card.classList.remove('highlight');
+                        card.classList.remove('dimmed');
+                    });
+                }
+            });
+            
+            const navContainer = document.getElementById('top-nav-container');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4 
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.id;
+                        navLinks.forEach(link => {
+                           link.classList.toggle('active-nav', link.getAttribute('href') === `#${id}`);
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => observer.observe(section));
+        });
+    </script>
+</body>
+</html>
